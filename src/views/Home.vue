@@ -1,18 +1,40 @@
 <template>
-  <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div class="home p-2">
+    <HardcodedText ref="textDiv"
+                   :id="textId"
+                   @pointerup="() => showHighlight()" />
+    <HighlightSelectPopup v-if="temporaryHighlights" :scrollTop="0" />
   </div>
 </template>
 
 <script>
-// @ is an alias to /src
-import HelloWorld from '@/components/HelloWorld.vue'
+import { ref, onMounted } from 'vue';
+import HardcodedText from '@/components/HardcodedText.vue';
+import HighlightSelectPopup from '@/components/HighlightSelectPopup.vue';
+import useTextHighlighter from '@/composables/text-highlighter';
 
 export default {
   name: 'Home',
   components: {
-    HelloWorld
+    HardcodedText,
+    HighlightSelectPopup,
+  },
+  setup () {
+    const textDiv = ref(null)
+    const { loadHighlights, showHighlightPopup, temporaryHighlights, textId } = useTextHighlighter()
+
+    onMounted(async () => {
+      loadHighlights()
+    })
+    const showHighlight = function() {
+      showHighlightPopup()
+    }
+    return {
+      textDiv,
+      textId,
+      temporaryHighlights,
+      showHighlight,
+    }
   }
 }
 </script>

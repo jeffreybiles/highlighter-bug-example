@@ -15,6 +15,21 @@
   color: #2c3e50;
 }
 
+div, span, p, button, tr, h1, h2, h3, h4, h5, h6 {
+  font-family: Roboto;
+  font-size: 16px;
+}
+
+h1 span {
+  @apply text-4xl;
+}
+h2 span {
+  @apply text-2xl;
+}
+h3 span {
+  @apply text-xl;
+}
+
 #nav {
   padding: 30px;
 
@@ -26,5 +41,11 @@
       color: #42b983;
     }
   }
+}
+
+.my-highlights {
+  // these values are dependent on the line-height
+  padding-bottom: 5px;
+  padding-top: 5px;
 }
 </style>
