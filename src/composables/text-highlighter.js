@@ -3,7 +3,6 @@ import { doHighlight, deserializeHighlights, serializeHighlights, removeHighligh
 import { useLocalStorage } from 'vue-composable';
 
 const colors = ['#E0C3C4', '#ABE4B8', '#E1DCAD', '#E2CBA9', '#3F3F45']
-const currentColor = ref('yellow');
 const temporaryHighlights = ref(null)
 const temporaryHighlightsRange = ref(null)
 
@@ -47,10 +46,6 @@ export const useTextHighlighter = function() {
     document.getSelection().removeAllRanges();
   }
 
-  const setColor = function(color) {
-    currentColor.value = color;
-  }
-
   const showHighlightPopup = function(){
     if(document.getSelection().type !== 'Range') {
       return;
@@ -72,9 +67,7 @@ export const useTextHighlighter = function() {
   return {
     runHighlight,
     loadHighlights,
-    currentColor,
     colors,
-    setColor,
     showHighlightPopup,
     hideHighlightPopup,
     temporaryHighlights,
