@@ -1,3 +1,5 @@
+Update: [ggianglv's solution has earned the bounty](https://github.com/jeffreybiles/highlighter-bug-example/pull/2)
+
 # Instructions for Bug Bounty
 
 If you're the right person, with the right knowledge, this could take you an hour.  Or maybe even 10 minutes.  
