@@ -37,8 +37,6 @@ export const useTextHighlighter = function() {
   }
   const runHighlight = async function(color){
     highlightText(textId, color)
-
-    await nextTick();
   }
 
   const showHighlightPopup = function(){
