@@ -1,5 +1,6 @@
 import { ref, computed, nextTick } from 'vue';
 import { doHighlight, deserializeHighlights, serializeHighlights, removeHighlights, TextHighlighter } from "@funktechno/texthighlighter/lib/index";
+import { normalizeHighlights } from "@funktechno/texthighlighter/lib/Library";
 import { useLocalStorage } from 'vue-composable';
 
 const colors = ['#E0C3C4', '#ABE4B8', '#E1DCAD', '#E2CBA9', '#3F3F45']
@@ -26,24 +27,18 @@ export const useTextHighlighter = function() {
   }
 
   const highlightText = function(highlightId, color) {
+    document.getSelection().removeAllRanges();
+    document.getSelection().addRange(temporaryHighlightsRange.value)
+
     const text = document.getElementById(textId)
     doHighlight(text, false, { color, highlightedClass: 'my-highlights' })
     saveHighlights(text)
     return text;
   }
   const runHighlight = async function(color){
-    // this is necessary because otherwise mobile on iOS selects _everything_
-    document.getSelection().removeAllRanges();
-
-    // this is necessary because Safari on desktop un-selects the range after the highlight select popup appears
-    document.getSelection().addRange(temporaryHighlightsRange.value)
-
     highlightText(textId, color)
 
     await nextTick();
-
-    // and this might be necessary because it wants to keep things highlighted for some reason...
-    document.getSelection().removeAllRanges();
   }
 
   const showHighlightPopup = function(){
