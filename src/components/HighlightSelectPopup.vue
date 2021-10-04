@@ -4,8 +4,6 @@
     Otherwise the offsets won't be correct.
     There may be issues when flipping the phone, will have to make sure that works correctly and adjust for it if not
 -->
-  {{ colors }}
-
   <div
     ref="popupRef"
     class="
@@ -66,7 +64,6 @@ export default {
     },
   },
   setup(props) {
-    console.log("loading popup");
     const {
       temporaryHighlights,
       hideHighlightPopup,
@@ -140,8 +137,8 @@ export default {
       hideHighlightPopup();
     };
 
-    console.log(colors);
-    return {
+
+return {
       temporaryHighlights,
       offsetTop,
       offsetCenter,
