@@ -53,7 +53,19 @@ const wrapRange = (range) => {
   // but unfortunately it deletes *all* html tags, not just the highlight spans
   // that means it will delete paragraph breaks, images, etc.
 
+
   const content = range.cloneContents()
+  // const unhighlightedContent = []
+  // content.childNodes.forEach(n => {
+  //   if(n.dataset?.highlighted) {
+  //     unhighlightedContent.push(document.createTextNode(n.textContent))
+  //   } else {
+  //     console.log(n)
+  //     unhighlightedContent.push(n)
+  //   }
+  // })
+  // content.replaceChildren()
+  // unhighlightedContent.forEach(x => content.appendChild(x))
 
   const wrapper = createWrapper({
     color: "#BBB",
@@ -64,9 +76,17 @@ const wrapRange = (range) => {
   wrapper.setAttribute('data-timestamp', timestamp);
 
   wrapper.textContent = content.textContent
+
+  
   range.deleteContents()
   range.insertNode(wrapper)
 
+}
+
+const isIgnorable = (node) => {
+  const nodeTypesToIgnore = ["IMG"]
+  const nodeName = node.children && node.children[0]?.nodeName
+  return nodeTypesToIgnore.includes(nodeName)
 }
 
 const deconstructHighlights = (range) => {
@@ -76,12 +96,31 @@ const deconstructHighlights = (range) => {
   endElement = endElement.dataset.highlighted ? endElement.parentElement : endElement;
   startElement = startElement.dataset.highlighted ? startElement.parentElement : startElement;
 
-  if(startElement == endElement) {
+  if(range.startContainer == range.endContainer) {
+    if(isIgnorable(range.startContainer)) {
+      return;
+    }
+    wrapRange(range)
+  } else if(startElement == endElement) {
     // this is easy-mode... just add highlight
-    // but it does delete images still...
-    // TODO - fix this so it doesn't delete any images
     wrapRange(range)
   } else {
+    const children = range.commonAncestorContainer.childNodes;
+    for(let i = 0; i < children.length; i++) {
+      let node = children[i]
+
+      if(isIgnorable(node)) {
+        console.log("ignored") // do nothing
+      } else {
+        if(range.intersectsNode(node)) { //intersects node is "experimental", but is supported in all modern browsers
+          // TODO - how to wrap each of these properly, only including what's within the range?
+          console.log(node)
+        } else {
+          console.log("does not intersect") // do nothing
+        }
+        
+      }
+    }
     // TODO - have it find all the elements in between
     // now we have to find the correct elements and everything in between, and wrap them all
   }
