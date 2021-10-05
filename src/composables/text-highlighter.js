@@ -39,48 +39,26 @@ const textId = "highlightableText";
 // }
 
 
-// textContent gives us the old version in the paragraph, before the span
-// get through range.startContainer.parentElement.textContent 
-// so we can 
-// (still need to figure out how to get intermediate ones... maybe walk the tree on range.commonAncestorContainer.children)
-
 // NOTES - things that could be useful
 // if we want to remove specific ones, the timestamp may be useful...
 // range.getBoundingClientRect() may be useful for placing the popup.... ({x: 248.5, y: 368.984375, width: 637.625, height: 51, top: 368.984375, …})
 
-const wrapRange = (range) => {
-  // this current one works when it's only one paragraph... 
-  // but unfortunately it deletes *all* html tags, not just the highlight spans
-  // that means it will delete paragraph breaks, images, etc.
 
-
-  const content = range.cloneContents()
-  // const unhighlightedContent = []
-  // content.childNodes.forEach(n => {
-  //   if(n.dataset?.highlighted) {
-  //     unhighlightedContent.push(document.createTextNode(n.textContent))
-  //   } else {
-  //     console.log(n)
-  //     unhighlightedContent.push(n)
-  //   }
-  // })
-  // content.replaceChildren()
-  // unhighlightedContent.forEach(x => content.appendChild(x))
-
+const wrapRange = (range, color = "#BBB") => {
   const wrapper = createWrapper({
-    color: "#BBB",
+    color,
     highlightedClass: "my-highlights",
     contextClass: "highlighter-context",
   })
   const timestamp = (+new Date()).toString();
   wrapper.setAttribute('data-timestamp', timestamp);
 
+  
+  const content = range.cloneContents()
   wrapper.textContent = content.textContent
-
   
   range.deleteContents()
   range.insertNode(wrapper)
-
 }
 
 const isIgnorable = (node) => {
@@ -89,40 +67,43 @@ const isIgnorable = (node) => {
   return nodeTypesToIgnore.includes(nodeName)
 }
 
+const findNonspan = (node) => {
+  if(node.tagName == 'SPAN') {
+    return findNonspan(node.parentElement)
+  } else {
+    return node
+  }
+}
+
 const deconstructHighlights = (range) => {
-  let endElement = range.endContainer.parentElement;
-  let startElement = range.startContainer.parentElement;
+  const { startContainer, endContainer, startOffset, endOffset, commonAncestorContainer } = range
+  let endElement = endContainer.parentElement;
+  let startElement = startContainer.parentElement;
 
-  endElement = endElement.dataset.highlighted ? endElement.parentElement : endElement;
-  startElement = startElement.dataset.highlighted ? startElement.parentElement : startElement;
-
-  if(range.startContainer == range.endContainer) {
-    if(isIgnorable(range.startContainer)) {
+  if(startContainer == endContainer) {
+    if(isIgnorable(startContainer)) {
       return;
     }
     wrapRange(range)
-  } else if(startElement == endElement) {
+  } else if(findNonspan(startElement) == findNonspan(endElement)) {
     // this is easy-mode... just add highlight
     wrapRange(range)
   } else {
-    const children = range.commonAncestorContainer.childNodes;
+    const children = commonAncestorContainer.childNodes;
     for(let i = 0; i < children.length; i++) {
       let node = children[i]
 
-      if(isIgnorable(node)) {
-        console.log("ignored") // do nothing
-      } else {
-        if(range.intersectsNode(node)) { //intersects node is "experimental", but is supported in all modern browsers
-          // TODO - how to wrap each of these properly, only including what's within the range?
-          console.log(node)
-        } else {
-          console.log("does not intersect") // do nothing
+      if(!isIgnorable(node) && range.intersectsNode(node)) {
+        const range2 = new Range();
+        range2.selectNodeContents(node)
+        if(startContainer.parentElement == node || findNonspan(startContainer.parentElement) == findNonspan(node)) {
+          range2.setStart(startContainer, startOffset)
+        } else if(endContainer.parentElement == node || findNonspan(endContainer.parentElement) == findNonspan(node)) {
+          range2.setEnd(endContainer, endOffset)
         }
-        
+        wrapRange(range2)
       }
     }
-    // TODO - have it find all the elements in between
-    // now we have to find the correct elements and everything in between, and wrap them all
   }
 }
 
