@@ -52,6 +52,7 @@ const wrapRange = (range, color = "#BBB") => {
   })
   const timestamp = (+new Date()).toString();
   wrapper.setAttribute('data-timestamp', timestamp);
+  wrapper.setAttribute('data-highlighted', true);
 
   
   const content = range.cloneContents()
@@ -81,7 +82,7 @@ const findNonspan = (node) => {
 // 2b. - any updates needed to localstorage, or is it all good with current format?
 // 3. When clicking away, reload from localstorage
 
-const deconstructHighlights = (range) => {
+const deconstructHighlights = (range, color) => {
   const { startContainer, endContainer, startOffset, endOffset, commonAncestorContainer } = range
   let endElement = endContainer.parentElement;
   let startElement = startContainer.parentElement;
@@ -90,10 +91,10 @@ const deconstructHighlights = (range) => {
     if(isIgnorable(startContainer)) {
       return;
     }
-    wrapRange(range)
+    wrapRange(range, color)
   } else if(findNonspan(startElement) == findNonspan(endElement)) {
     // this is easy-mode... just add highlight
-    wrapRange(range)
+    wrapRange(range, color)
   } else {
     const children = commonAncestorContainer.childNodes;
     for(let i = 0; i < children.length; i++) {
@@ -107,7 +108,7 @@ const deconstructHighlights = (range) => {
         } else if(endContainer.parentElement == node || findNonspan(endContainer.parentElement) == findNonspan(node)) {
           range2.setEnd(endContainer, endOffset)
         }
-        wrapRange(range2)
+        wrapRange(range2, color)
       }
     }
   }
@@ -129,7 +130,6 @@ export const useTextHighlighter = function() {
   }
   const saveHighlights = function(data) {
     const highlightedData = serializeHighlights(data)
-
     localStorage.setItem(highlightKey, highlightedData)
   }
   const loadHighlights = function() {
@@ -141,10 +141,9 @@ export const useTextHighlighter = function() {
 
   const highlightText = function(highlightId, color) {
     document.getSelection().removeAllRanges();
-    document.getSelection().addRange(temporaryHighlightsRange.value)
 
     const text = document.getElementById(textId)
-    doHighlight(text, false, { color, highlightedClass: 'my-highlights' })
+    deconstructHighlights(temporaryHighlightsRange.value, color)
     saveHighlights(text)
     return text;
   }
@@ -161,7 +160,6 @@ export const useTextHighlighter = function() {
     var text = document.getElementById(textId);
 
     const range = document.getSelection().getRangeAt(0)
-    console.log(range)
 
     deconstructHighlights(range)
 
