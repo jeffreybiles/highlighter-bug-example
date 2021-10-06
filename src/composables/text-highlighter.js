@@ -75,6 +75,12 @@ const findNonspan = (node) => {
   }
 }
 
+// TODO
+// 1. Save the old range after "deconstructHighlights" (and maybe get a better function name)
+// 2. When clicking a highlight color, do that color on the saved range and then save to localstorage
+// 2b. - any updates needed to localstorage, or is it all good with current format?
+// 3. When clicking away, reload from localstorage
+
 const deconstructHighlights = (range) => {
   const { startContainer, endContainer, startOffset, endOffset, commonAncestorContainer } = range
   let endElement = endContainer.parentElement;
@@ -158,29 +164,9 @@ export const useTextHighlighter = function() {
     console.log(range)
 
     deconstructHighlights(range)
-    // debugger
 
-    // if(range.startContainer.data === range.endContainer.data) {
-    //   console.log("we're in the same tag")
-    // } else {
-    //   console.log("different tags")
-    // }
-
-    // timestamp = (+new Date()).toString();
-    // wrapper = createWrapper({
-    //   color: "#BBB",
-    //   highlightedClass: "highlighted",
-    //   contextClass: "highlighter-context",
-    // });
-    // wrapper.setAttribute('data-timestamp', timestamp);
-
-    // createdHighlights = highlightRange(text, range, wrapper);
-    // normalizedHighlights = normalizeHighlights(createdHighlights);
-    // console.log(range, createdHighlights, normalizedHighlights)
-
-    // temporaryHighlightsRange.value = range;
-    // temporaryHighlights.value = normalizedHighlights;
-      // document.getSelection().removeAllRanges();
+    temporaryHighlightsRange.value = range;
+    temporaryHighlights.value = range;
   }
 
   const hideHighlightPopup = function(){

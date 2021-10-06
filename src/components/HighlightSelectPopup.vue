@@ -81,6 +81,9 @@ export default {
     const updateScroll = function () {
       scrollY.value = window.scrollY;
     };
+    const temporaryHighlightElement = computed(()=>{
+      return temporaryHighlights.value.getClientRects()[0];
+    })
 
     const onMouseDown = (e) => {
       if (!popupRef.value.contains(e.target) && highlightText) {
@@ -100,9 +103,10 @@ export default {
     });
 
     const offsetTop = computed(() => {
-      if (!temporaryHighlights.value) return null;
+      if (!temporaryHighlightElement.value) return null;
+      console.log(temporaryHighlightElement.value)
       return (
-        temporaryHighlights.value[0].offsetTop -
+        temporaryHighlightElement.value.top -
         popupHeight -
         triangleHeight * 2 -
         props.scrollTop -
@@ -111,19 +115,19 @@ export default {
     });
 
     const offsetCenter = computed(() => {
-      if (!temporaryHighlights.value) return null;
+      if (!temporaryHighlightElement.value) return null;
 
-      const { offsetLeft } = temporaryHighlights.value[0];
+      const { left } = temporaryHighlightElement.value;
       const popupWidth = 290;
       const windowWidth = window.innerWidth;
-      const willOverflow = offsetLeft + popupWidth > windowWidth;
+      const willOverflow = left + popupWidth > windowWidth;
       if (willOverflow) {
         // move it so everything's on screen, but triangle is still pointing to highlighted part
         const leftEdgeOfPopup = windowWidth - popupWidth;
-        triangleOffset.value = offsetLeft - leftEdgeOfPopup; // mutating properties in a computed property is bad practice - should try to refactor this
+        triangleOffset.value = left - leftEdgeOfPopup; // mutating properties in a computed property is bad practice - should try to refactor this
         return leftEdgeOfPopup;
       } else {
-        return offsetLeft - triangleOffset.value;
+        return left - triangleOffset.value;
       }
     });
 
@@ -139,7 +143,6 @@ export default {
 
 
 return {
-      temporaryHighlights,
       offsetTop,
       offsetCenter,
       hideHighlightPopup,
