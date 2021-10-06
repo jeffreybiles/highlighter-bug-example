@@ -143,7 +143,8 @@ export const useTextHighlighter = function() {
     document.getSelection().removeAllRanges();
 
     const text = document.getElementById(textId)
-    deconstructHighlights(temporaryHighlightsRange.value, color)
+    wrapRange(temporaryHighlightsRange.value, color)
+
     saveHighlights(text)
     return text;
   }
