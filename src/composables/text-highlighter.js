@@ -97,19 +97,27 @@ const deconstructHighlights = (range, color) => {
     wrapRange(range, color)
   } else {
     const children = commonAncestorContainer.childNodes;
-    for(let i = 0; i < children.length; i++) {
-      let node = children[i]
+    wrapMultipleElements(children, range, color)
+  }
+}
 
-      if(!isIgnorable(node) && range.intersectsNode(node)) {
-        const range2 = new Range();
-        range2.selectNodeContents(node)
-        if(startContainer.parentElement == node || findNonspan(startContainer.parentElement) == findNonspan(node)) {
-          range2.setStart(startContainer, startOffset)
-        } else if(endContainer.parentElement == node || findNonspan(endContainer.parentElement) == findNonspan(node)) {
-          range2.setEnd(endContainer, endOffset)
-        }
-        wrapRange(range2, color)
+// this doesn't work when wrapping elements that have a non-highlight span, such as a paragraphNumber.
+// TODO - fix it to separate out those and save the paragraphNumber and the paragraph separately
+const wrapMultipleElements = (children, range, color) => {
+  const { startContainer, endContainer, startOffset, endOffset, commonAncestorContainer } = range
+
+  for(let i = 0; i < children.length; i++) {
+    let node = children[i]
+
+    if(!isIgnorable(node) && range.intersectsNode(node)) {
+      const range2 = new Range();
+      range2.selectNodeContents(node)
+      if(startContainer.parentElement == node || findNonspan(startContainer.parentElement) == findNonspan(node)) {
+        range2.setStart(startContainer, startOffset)
+      } else if(endContainer.parentElement == node || findNonspan(endContainer.parentElement) == findNonspan(node)) {
+        range2.setEnd(endContainer, endOffset)
       }
+      wrapRange(range2, color)
     }
   }
 }
@@ -142,9 +150,15 @@ export const useTextHighlighter = function() {
   const highlightText = function(highlightId, color) {
     document.getSelection().removeAllRanges();
 
-    const text = document.getElementById(textId)
-    wrapRange(temporaryHighlightsRange.value, color)
+    const range = temporaryHighlights.value;
+    if(range.startContainer.parentElement == range.endContainer) {
+      wrapRange(range, color)
+    } else {
+      const children = range.commonAncestorContainer.childNodes;
+      wrapMultipleElements(children, range, color)
+    }
 
+    const text = document.getElementById(textId)
     saveHighlights(text)
     return text;
   }
