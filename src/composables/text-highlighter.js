@@ -180,6 +180,8 @@ export const useTextHighlighter = function() {
 
     temporaryHighlightsRange.value = range;
     temporaryHighlights.value = range;
+
+    document.getSelection().removeAllRanges();    
   }
 
   const hideHighlightPopup = function(){
