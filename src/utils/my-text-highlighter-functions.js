@@ -48,10 +48,15 @@ export const wrapRange = (range, color = "#BBB") => {
     const wrapper = createDefaultWrapper(color)
     wrapper.textContent = node.textContent
     if(node.innerHTML) {
-      const fakeNode = document.createElement("span")
       node.textContent = ''
+      const fakeNode = document.createElement("span")
       range.insertNode(fakeNode)
-      fakeNode.previousSibling.insertAdjacentElement('beforeEnd', wrapper)
+      if(fakeNode.previousSibling) {
+        fakeNode.previousSibling.insertAdjacentElement('beforeEnd', wrapper)
+      } else {
+        node.insertAdjacentElement('afterBegin', wrapper)
+        range.insertNode(node)
+      }
       fakeNode.remove()
     } else {
       range.insertNode(wrapper)
