@@ -43,8 +43,7 @@ const textId = "highlightableText";
 // if we want to remove specific ones, the timestamp may be useful...
 // range.getBoundingClientRect() may be useful for placing the popup.... ({x: 248.5, y: 368.984375, width: 637.625, height: 51, top: 368.984375, …})
 
-
-const wrapRange = (range, color = "#BBB") => {
+const createDefaultWrapper = (color) => {
   const wrapper = createWrapper({
     color,
     highlightedClass: "my-highlights",
@@ -53,13 +52,62 @@ const wrapRange = (range, color = "#BBB") => {
   const timestamp = (+new Date()).toString();
   wrapper.setAttribute('data-timestamp', timestamp);
   wrapper.setAttribute('data-highlighted', true);
+  return wrapper;
+}
 
-  
+const findSubranges = (range, color) => {
+
   const content = range.cloneContents()
-  wrapper.textContent = content.textContent
-  
+
+  var newNodes = []
+  // if there are child nodes that aren't highlights, then split and run wrapRange on all of them separately
+  let textContent = ''
+  content.childNodes.forEach((child, index) => {
+    console.log(child, index)
+    if(shouldBeSeparate(child)) {
+      if(textContent != '') {
+        const textNode = document.createTextNode(textContent)
+        newNodes.push(textNode)
+        textContent = ''
+      }
+
+      if(child.childNodes.length > 1) {
+        const range2 = new Range()
+        range2.selectNodeContents(child)
+        console.log("separating")
+        newNodes = [...newNodes, ...findSubranges(range2, color)]
+      } else {
+        newNodes.push(child)
+      }
+      
+    } else {
+      textContent += child.textContent
+    }
+  })
+
+  if(textContent != '') {
+    const textNode = document.createTextNode(textContent)
+    newNodes.push(textNode)
+    textContent = ''
+  }
+
+  return newNodes;
+}
+
+const wrapRange = (range, color = "#BBB") => {
+  const subRanges = findSubranges(range, color);
+
   range.deleteContents()
-  range.insertNode(wrapper)
+  subRanges.reverse()
+  subRanges.forEach(node => {
+    const wrapper = createDefaultWrapper(color)
+    wrapper.textContent = node.textContent
+    range.insertNode(wrapper)
+  })
+}
+
+const shouldBeSeparate = (node) => {
+  return node.tagName && !node.dataset.highlighted
 }
 
 const isIgnorable = (node) => {
@@ -68,9 +116,9 @@ const isIgnorable = (node) => {
   return nodeTypesToIgnore.includes(nodeName)
 }
 
-const findNonspan = (node) => {
+const nodeWithoutHighlight = (node) => {
   if(node.tagName == 'SPAN') {
-    return findNonspan(node.parentElement)
+    return nodeWithoutHighlight(node.parentElement)
   } else {
     return node
   }
@@ -92,7 +140,7 @@ const deconstructHighlights = (range, color) => {
       return;
     }
     wrapRange(range, color)
-  } else if(findNonspan(startElement) == findNonspan(endElement)) {
+  } else if(nodeWithoutHighlight(startElement) == nodeWithoutHighlight(endElement)) {
     // this is easy-mode... just add highlight
     wrapRange(range, color)
   } else {
@@ -112,9 +160,9 @@ const wrapMultipleElements = (children, range, color) => {
     if(!isIgnorable(node) && range.intersectsNode(node)) {
       const range2 = new Range();
       range2.selectNodeContents(node)
-      if(startContainer.parentElement == node || findNonspan(startContainer.parentElement) == findNonspan(node)) {
+      if(startContainer.parentElement == node || nodeWithoutHighlight(startContainer.parentElement) == nodeWithoutHighlight(node)) {
         range2.setStart(startContainer, startOffset)
-      } else if(endContainer.parentElement == node || findNonspan(endContainer.parentElement) == findNonspan(node)) {
+      } else if(endContainer.parentElement == node || nodeWithoutHighlight(endContainer.parentElement) == nodeWithoutHighlight(node)) {
         range2.setEnd(endContainer, endOffset)
       }
       wrapRange(range2, color)
