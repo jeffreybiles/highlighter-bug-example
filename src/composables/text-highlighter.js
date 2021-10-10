@@ -102,7 +102,13 @@ const wrapRange = (range, color = "#BBB") => {
   subRanges.forEach(node => {
     const wrapper = createDefaultWrapper(color)
     wrapper.textContent = node.textContent
-    range.insertNode(wrapper)
+    if(node.innerHTML) {
+      node.textContent = ''
+      node.insertAdjacentElement('afterBegin', wrapper)
+      range.insertNode(node)
+    } else {
+      range.insertNode(wrapper)
+    }
   })
 }
 
