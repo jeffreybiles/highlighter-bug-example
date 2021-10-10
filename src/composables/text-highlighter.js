@@ -103,9 +103,11 @@ const wrapRange = (range, color = "#BBB") => {
     const wrapper = createDefaultWrapper(color)
     wrapper.textContent = node.textContent
     if(node.innerHTML) {
+      const fakeNode = document.createElement("span")
       node.textContent = ''
-      node.insertAdjacentElement('afterBegin', wrapper)
-      range.insertNode(node)
+      range.insertNode(fakeNode)
+      fakeNode.previousSibling.insertAdjacentElement('beforeEnd', wrapper)
+      fakeNode.remove()
     } else {
       range.insertNode(wrapper)
     }
