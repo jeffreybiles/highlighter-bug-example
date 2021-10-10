@@ -1,5 +1,5 @@
 import { ref, computed, nextTick } from 'vue';
-import { doHighlight, deserializeHighlights, serializeHighlights, removeHighlights } from "@funktechno/texthighlighter/lib/index";
+import { doHighlight, deserializeHighlights, serializeHighlights, removeHighlights, createWrapper } from "@funktechno/texthighlighter/lib/index";
 import { normalizeHighlights } from "@funktechno/texthighlighter/lib/Library";
 import { refineRangeBoundaries, NODE_TYPE, IGNORE_TAGS, DATA_ATTR } from "@funktechno/texthighlighter/lib/Utils";
 import { dom } from "@/utils/dom";
@@ -11,37 +11,6 @@ const temporaryHighlightsRange = ref(null)
 
 const highlightKey = 'highlights'
 const textId = "highlightableText";
-
-// What if we create a representation of the html
-// And then a separate representation of where the highlights should go
-// And finally, a way to put them together to show the highlights
-// however, we'd also need a way to "undo", since they can click away from the grey one and we'll have to undo it
-// so we'll create a set of commands which are reversible, and that gets us an 'undo' button as well
-// these commands act on the skeleton set of highlights
-
-
-// const highlights = [
-//   {
-//     startNode: {some representation that helps us find it},
-//     startOffset: X,
-//     endNode: {},
-//     endOffset: Y
-//   },
-//   {
-
-//   }
-// ]
-
-// addHighlight(text, highlights, newHighlight) {
-//   const overlaps = findOverlaps(text, highlights, newHighlight)
-//   overlaps.forEach(overlap => trimOverlap(overlap))
-//   createHighlight(newHighlight)
-// }
-
-
-// NOTES - things that could be useful
-// if we want to remove specific ones, the timestamp may be useful...
-// range.getBoundingClientRect() may be useful for placing the popup.... ({x: 248.5, y: 368.984375, width: 637.625, height: 51, top: 368.984375, …})
 
 const createDefaultWrapper = (color) => {
   const wrapper = createWrapper({
@@ -55,27 +24,28 @@ const createDefaultWrapper = (color) => {
   return wrapper;
 }
 
-const findSubranges = (range, color) => {
-
-  const content = range.cloneContents()
-
-  var newNodes = []
-  // if there are child nodes that aren't highlights, then split and run wrapRange on all of them separately
+const findSubranges = (rangeContent, color) => {
+  let newNodes = []
   let textContent = ''
-  content.childNodes.forEach((child, index) => {
-    console.log(child, index)
+
+  const newTextNodeIfContent = () => {
+    if(textContent != '') {
+      const textNode = document.createTextNode(textContent)
+      newNodes.push(textNode)
+      textContent = ''
+    }
+  }
+  
+  rangeContent.childNodes.forEach((child, index) => {
     if(shouldBeSeparate(child)) {
-      if(textContent != '') {
-        const textNode = document.createTextNode(textContent)
-        newNodes.push(textNode)
-        textContent = ''
-      }
+      newTextNodeIfContent()
 
       if(child.childNodes.length > 1) {
         const range2 = new Range()
         range2.selectNodeContents(child)
-        console.log("separating")
-        newNodes = [...newNodes, ...findSubranges(range2, color)]
+        const contents = range2.cloneContents()
+        console.log("splitting")
+        newNodes = [...newNodes, ...findSubranges(contents, color)]
       } else {
         newNodes.push(child)
       }
@@ -85,17 +55,14 @@ const findSubranges = (range, color) => {
     }
   })
 
-  if(textContent != '') {
-    const textNode = document.createTextNode(textContent)
-    newNodes.push(textNode)
-    textContent = ''
-  }
+  newTextNodeIfContent()
 
   return newNodes;
 }
 
 const wrapRange = (range, color = "#BBB") => {
-  const subRanges = findSubranges(range, color);
+  const content = range.cloneContents()
+  const subRanges = findSubranges(content, color);
 
   range.deleteContents()
   subRanges.reverse()
@@ -132,12 +99,6 @@ const nodeWithoutHighlight = (node) => {
   }
 }
 
-// TODO
-// 1. Save the old range after "deconstructHighlights" (and maybe get a better function name)
-// 2. When clicking a highlight color, do that color on the saved range and then save to localstorage
-// 2b. - any updates needed to localstorage, or is it all good with current format?
-// 3. When clicking away, reload from localstorage
-
 const deconstructHighlights = (range, color) => {
   const { startContainer, endContainer, startOffset, endOffset, commonAncestorContainer } = range
   let endElement = endContainer.parentElement;
@@ -149,7 +110,6 @@ const deconstructHighlights = (range, color) => {
     }
     wrapRange(range, color)
   } else if(nodeWithoutHighlight(startElement) == nodeWithoutHighlight(endElement)) {
-    // this is easy-mode... just add highlight
     wrapRange(range, color)
   } else {
     const children = commonAncestorContainer.childNodes;
@@ -157,8 +117,6 @@ const deconstructHighlights = (range, color) => {
   }
 }
 
-// this doesn't work when wrapping elements that have a non-highlight span, such as a paragraphNumber.
-// TODO - fix it to separate out those and save the paragraphNumber and the paragraph separately
 const wrapMultipleElements = (children, range, color) => {
   const { startContainer, endContainer, startOffset, endOffset, commonAncestorContainer } = range
 
@@ -176,16 +134,6 @@ const wrapMultipleElements = (children, range, color) => {
       wrapRange(range2, color)
     }
   }
-}
-
-function createWrapper(options) {
-  const span = document.createElement("span");
-  if (options.color) {
-      span.style.backgroundColor = options.color;
-      span.setAttribute("data-backgroundcolor", options.color);
-  }
-  if (options.highlightedClass) span.className = options.highlightedClass;
-  return span;
 }
 
 export const useTextHighlighter = function() {
